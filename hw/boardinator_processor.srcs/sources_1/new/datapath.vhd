@@ -1,22 +1,4 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 06/12/2020 02:03:31 PM
--- Design Name: 
--- Module Name: datapath - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
 
 
 library IEEE;
@@ -39,7 +21,10 @@ entity datapath is
            --stack_addr_reg : in STD_LOGIC_VECTOR(2 downto 0);
            
            out_word : out STD_LOGIC_VECTOR (7 downto 0);
-           flags : out STD_LOGIC_VECTOR(1 downto 0));
+           flags : out STD_LOGIC_VECTOR(2 downto 0);
+           
+           a_readback : out STD_LOGIC_VECTOR(7 downto 0);
+           b_readback : out STD_LOGIC_VECTOR(7 downto 0));
 end datapath;
 
 architecture Behavioral of datapath is
@@ -62,8 +47,9 @@ architecture Behavioral of datapath is
      Port ( a : in STD_LOGIC_VECTOR (7 downto 0);
             b : in STD_LOGIC_VECTOR (7 downto 0);
             op : in STD_LOGIC_VECTOR (4 downto 0);
+            clk : in STD_LOGIC;
             y : out STD_LOGIC_VECTOR (7 downto 0);
-            flags : out STD_LOGIC_VECTOR (1 downto 0));
+            flags : out STD_LOGIC_VECTOR (2 downto 0));
      end component;
      
      component stack
@@ -77,6 +63,7 @@ architecture Behavioral of datapath is
      end component;
      
      signal a_sig, b_sig, y_sig, rf_in, stack_addr, stack_output: std_logic_vector(7 downto 0);
+     signal alu_b_in: std_logic_vector(7 downto 0);
 begin
     regfile: rf port map (
         clk => clk,
@@ -92,8 +79,9 @@ begin
     
     arithlogic: alu port map (
         a => a_sig,
-        b => b_sig,
+        b => alu_b_in,
         op => op,
+        clk => clk,
         y => y_sig,
         flags => flags
     );
@@ -109,11 +97,32 @@ begin
     );
     
     --register file input mux (selects between ALU Y and literal
-    process(op, lit, y_sig, stack_output)
+--    process(op, lit, y_sig, stack_output)
+--    begin
+--        if(op="00000") then
+--            rf_in <= lit;
+--        elsif(op="01110" or op="01111") then
+--            rf_in <= stack_output;
+--        else
+--            rf_in <= y_sig;
+--        end if;
+--    end process;
+
+    --alu b input is a literal for instructions:
+    --set, addl, subl, getpcl, getpch
+    process(op, lit, b_sig)
     begin
-        if(op="00000") then
-            rf_in <= lit;
-        elsif(op="01110" or op="01111") then
+        if(op="00000" or op="00011" or op="00101" or op="10011" or op="10100") then
+            alu_b_in <= lit;
+        else
+            alu_b_in <= b_sig;
+        end if;
+    end process;
+    
+    --register file input mux (selects between ALU Y and stack output
+    process(op, y_sig, stack_output)
+    begin
+        if(op="10001" or op="10010") then
             rf_in <= stack_output;
         else
             rf_in <= y_sig;
@@ -131,5 +140,8 @@ begin
     end process;
     
     out_word <= y_sig;
+    
+    a_readback <= a_sig;
+    b_readback <= b_sig;
 
 end Behavioral;
