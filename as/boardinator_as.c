@@ -37,10 +37,15 @@ void print_machine(FILE *stream, char *word, uint16_t addr, char *src, machine_f
 
 int main(int argc, const char **argv)
 {
+
+	/*char stuff[200] = "well hi there test code!\ni hope you'll work!\n";
+	tokrepl(stuff, "i", "iiii", true);
+	puts(stuff);
+	return 0;*/
+
 	if(!parse_cmd_args(argc, argv))
 		printf("exiting...\n");
 
-	printf("preprocessing...\n");
 	preprocessed = preprocess(argv[1]);
 
 	uint16_t wordcnt = assemble(preprocessed);
@@ -139,11 +144,11 @@ uint16_t assemble(FILE *preprocessed)
 void assemble_line(char *machine, char *line, const char *fn, int linenum)
 {
 	char binbuf[OPCODE_BITS+1];
-	char *mnem, *arg0, *arg1;
+	char *mnem, *arg0, *arg1, *arg2;
 
 	//printf("read line %d: %s", linenum, line);
 
-	tokenize_asm(&mnem, &arg0, &arg1, line);
+	tokenize_asm(&mnem, &arg0, &arg1, &arg2, line);
 	if(!mnem)
 		error(fn, linenum, "syntax error");
 		//bail("syntax error on line %d", linenum);
@@ -167,7 +172,7 @@ void assemble_line(char *machine, char *line, const char *fn, int linenum)
 	binstring(machine+INSTR_BITS-OPCODE_BITS, opcode, OPCODE_BITS);
 		
 	//format the rest of the machine word
-	mnemonic_table[opcode].format(machine, arg0, arg1, fn, linenum);
+	mnemonic_table[opcode].format(machine, arg0, arg1, arg2, fn, linenum);
 
 	//output machine code
 	//putchar('\t'); print_machine(stdout, machine, true);

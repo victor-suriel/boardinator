@@ -22,9 +22,11 @@ entity cu is
             op : out STD_LOGIC_VECTOR (4 downto 0);
             dst, src : out STD_LOGIC_VECTOR (2 downto 0);
             lit : out STD_LOGIC_VECTOR (7 downto 0);
+            mem_region : out STD_LOGIC_VECTOR(1 downto 0);
             data_en : out STD_LOGIC;
             pc_out : out STD_LOGIC_VECTOR (9 downto 0);
             
+            ilgl_op : out STD_LOGIC;
             stack_we : out STD_LOGIC);
 end cu;
 
@@ -34,7 +36,7 @@ type cu_state_t is (fetch, execute);
 signal cu_state: cu_state_t := fetch;
 
 signal ir: std_logic_vector(15 downto 0);
-signal pc, next_pc: std_logic_vector(9 downto 0);
+signal pc, saved_pc: std_logic_vector(9 downto 0);
 signal op_int: std_logic_vector(4 downto 0);
 signal addr_sig: std_logic_vector(9 downto 0);
 signal jmp_condition: std_logic;
@@ -51,6 +53,7 @@ begin
             pc <= "0000000000";
             data_en <= '0';
             stack_we <= '0';
+            ilgl_op <= '1';
         else
             if(clk'event and clk='0') then
                 case cu_state is
@@ -90,10 +93,10 @@ begin
                                 else pc <= std_logic_vector(unsigned(pc) + 1); end if;
                             end if;
 
-                        elsif((operand = SETSTK_OP) or (operand = GETSTK_OP)) then
+                        elsif((operand = SETMEM_OP) or (operand = GETMEM_OP)) then
                             
                             pc <= std_logic_vector(unsigned(pc) + 1);
-                            if(operand = SETSTK_OP) then  --setstk
+                            if(operand = SETMEM_OP) then
                                 stack_we <= '1';
                                 data_en <= '0';
                             else    --getstk
@@ -102,11 +105,13 @@ begin
                             end if;
                         elsif((operand = GETPCL_OP) or (operand = GETPCH_OP)) then
                             data_en <= '1';
+                            saved_pc <= pc;
                             pc <= std_logic_vector(unsigned(pc) + 1);
                         elsif(operand = SETPC_OP) then
                             data_en <= '0';
                             pc <= a_readback(1 downto 0) & b_readback;
-                        --else we got problems
+                        else
+                            ilgl_op <= '0';
                         
                         end if;
                         
@@ -123,9 +128,10 @@ begin
     dst <= ir(10 downto 8);
     src <= ir(2 downto 0);
     --lit <= ir(7 downto 0);
-    lit <=  pc(7 downto 0) when operand = GETPCL_OP else
-            "000000" & pc(9 downto 8) when operand = GETPCH_OP else
+    lit <=  saved_pc(7 downto 0) when operand = GETPCL_OP else
+            "000000" & saved_pc(9 downto 8) when operand = GETPCH_OP else
             ir(7 downto 0);
+    mem_region <= ir(7 downto 6);
     
     addr_sig <= ir(9 downto 0);
     
