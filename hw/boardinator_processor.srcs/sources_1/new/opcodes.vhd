@@ -28,8 +28,8 @@ constant JNE_OP:    opcode := 15;
 constant JGT_OP:    opcode := 16;
 constant JLT_OP:    opcode := 17;
 constant JOVF_OP:   opcode := 18;
-constant SETMEM_OP: opcode := 19;
-constant GETMEM_OP: opcode := 20;
+constant SETM_OP: opcode := 19;
+constant GETM_OP: opcode := 20;
 constant GETPCL_OP: opcode := 21;
 constant GETPCH_OP: opcode := 22;
 constant SETPC_OP:  opcode := 23;
@@ -44,6 +44,14 @@ constant SFR_REGION:    integer := 2;
 constant EF_FLAG:   integer := 0;
 constant GLF_FLAG:  integer := 1;
 constant OF_FLAG:   integer := 2;
+
+--SFRs
+constant RSTCON:    integer := 0;
+constant RSTCAUSE:  integer := 1;
+constant TMRCON:    integer := 2;
+constant TMRCMP:    integer := 3;
+constant TMROUT:    integer := 4;
+
 
 type memarray_t is array (1023 downto 0) of std_logic_vector(7 downto 0);
 

@@ -22,9 +22,8 @@ typedef enum
 } machine_fmt;
 
 //
-//FILE *fin, *fout, *ftemp, *ftemp2;
-FILE *fin, *fout;
-FILE *preprocessed;
+FILE *fin, *fout, *preprocessed;
+const char *outfilename;
 
 
 //
@@ -50,6 +49,7 @@ int main(int argc, const char **argv)
 
 	uint16_t wordcnt = assemble(preprocessed);
 	printf("Assembly successful (0x%04x words, 0x%04x bytes)\n", wordcnt, wordcnt<<1);
+	printf("Output written to %s\n", outfilename);
 
 	fclose(fin);
 	fclose(preprocessed);
@@ -65,9 +65,9 @@ int main(int argc, const char **argv)
 
 bool parse_cmd_args(int argc, const char **argv)
 {
-	if(argc != 3)
+	if(argc != 2 && argc != 3)
 	{
-		printf("invalid number of args stupid\n");
+		printf("invalid number of args\n");
 		return false;
 	}
 
@@ -79,10 +79,11 @@ bool parse_cmd_args(int argc, const char **argv)
 		//return false;
 	}
 
-	fout = fopen(argv[2], "w");
+	outfilename = (argc==2)? "a.bin" : argv[2];
+	fout = fopen(outfilename, "w");
 	if(!fout)
 	{
-		printf("couldn't open the write file, what gives brah\n");
+		printf("couldn't open output file %s\n", outfilename);
 		return false;
 	}
 
@@ -144,11 +145,11 @@ uint16_t assemble(FILE *preprocessed)
 void assemble_line(char *machine, char *line, const char *fn, int linenum)
 {
 	char binbuf[OPCODE_BITS+1];
-	char *mnem, *arg0, *arg1, *arg2;
+	char *mnem, *arg0, *arg1, *arg2, *arg3;
 
 	//printf("read line %d: %s", linenum, line);
 
-	tokenize_asm(&mnem, &arg0, &arg1, &arg2, line);
+	tokenize_asm(&mnem, &arg0, &arg1, &arg2, &arg3, line);
 	if(!mnem)
 		error(fn, linenum, "syntax error");
 		//bail("syntax error on line %d", linenum);
@@ -172,7 +173,7 @@ void assemble_line(char *machine, char *line, const char *fn, int linenum)
 	binstring(machine+INSTR_BITS-OPCODE_BITS, opcode, OPCODE_BITS);
 		
 	//format the rest of the machine word
-	mnemonic_table[opcode].format(machine, arg0, arg1, arg2, fn, linenum);
+	mnemonic_table[opcode].format(machine, arg0, arg1, arg2, arg3, fn, linenum);
 
 	//output machine code
 	//putchar('\t'); print_machine(stdout, machine, true);
